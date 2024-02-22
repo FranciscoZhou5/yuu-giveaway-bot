@@ -1,4 +1,27 @@
 import { ButtonStyle, CacheType, ComponentType, ModalSubmitInteraction, time } from "discord.js";
+import { supabase } from "../../lib/supabase";
+import { GiveawaySetupData } from "../../types/GiveawaySetupData";
+import chalk from "chalk";
+import { scheduleJob } from "node-schedule";
+
+function scheduleGiveaway(interaction: ModalSubmitInteraction<CacheType>, date: Date) {
+  scheduleJob(date, async () => {
+    const channel = interaction.guild?.channels.cache.get("1196497340543013024");
+
+    if (!channel) {
+      return;
+    }
+
+    if (channel.isTextBased()) {
+      await channel.send("Sorteio realizado!");
+
+      // const date = new Date();
+      // date.setMinutes(35);
+      // schedule.scheduleJob(date, async () => {
+      // });
+    }
+  });
+}
 
 const id = "giveaway_setup";
 
@@ -8,16 +31,15 @@ async function handler(interaction: ModalSubmitInteraction<CacheType>) {
   const quantity = interaction.fields.getTextInputValue("giveawayWinnersQuantityInput");
   const inputDate = interaction.fields.getTextInputValue("giveawayDateInput");
 
-  console.log({ title, description, quantity, date: inputDate });
-
   const [datePart, hourPart] = inputDate.split(" ");
   const [day, month, year] = datePart.split("/");
   const [hour, minute] = hourPart.split(":");
 
   const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
 
-  await interaction.reply({
+  const { id: replyMessageId } = await interaction.reply({
     content: `O sorteio acontecerá em ${inputDate}(${time(date, "R")})`,
+    fetchReply: true,
     embeds: [
       {
         title,
@@ -50,6 +72,25 @@ async function handler(interaction: ModalSubmitInteraction<CacheType>) {
       },
     ],
   });
+
+  const { error, statusText, status } = await supabase.from("sorteios").insert<GiveawaySetupData>({
+    winner_quantity: +quantity,
+    participants: JSON.stringify([]),
+    message_id: replyMessageId,
+    description,
+    title,
+    winner: "",
+    date,
+  });
+
+  if (error) {
+    console.log({ error, status, statusText });
+
+    return;
+  }
+
+  console.log(`${chalk.cyan("info")} Created sucessfully "${title}"!`);
+  scheduleGiveaway(interaction, date);
 
   return;
 }
