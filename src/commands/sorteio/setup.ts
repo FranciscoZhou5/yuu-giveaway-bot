@@ -37,8 +37,8 @@ export default {
     const secondActionRow = new ActionRowBuilder().addComponents(giveawayDescriptionInput);
     const thirdActionRow = new ActionRowBuilder().addComponents(giveawayWinnersQuantityInput);
     const fourthActionRow = new ActionRowBuilder().addComponents(giveawayDateInput);
-    //@ts-ignore
 
+    //@ts-ignore
     modal.addComponents(firstActionRow, secondActionRow, thirdActionRow, fourthActionRow);
 
     await interaction.showModal(modal);
